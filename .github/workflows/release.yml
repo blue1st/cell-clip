@@ -1,0 +1,74 @@
+name: Release Build and Upload
+
+on:
+  push:
+    tags:
+      - 'v*'   # Trigger on version tags like v1.2.3
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        arch: [amd64, arm64]
+        # Windows ARM runners are not generally available
+        exclude:
+          - os: windows-latest
+            arch: arm64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '^1.24'
+
+      - name: Determine build variables
+        id: vars
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-latest)   GOOS=linux  ;;
+            macos-latest)    GOOS=darwin ;;
+            windows-latest)  GOOS=windows;;
+          esac
+          echo "GOOS=$GOOS" >> $GITHUB_OUTPUT
+          echo "GOARCH=${{ matrix.arch }}" >> $GITHUB_OUTPUT
+
+      - name: Build binary
+        env:
+          GOOS: ${{ steps.vars.outputs.GOOS }}
+          GOARCH: ${{ steps.vars.outputs.GOARCH }}
+        run: |
+          OUTPUT_NAME="cell-clip-${GOOS}-${GOARCH}"
+          if [ "$GOOS" = "windows" ]; then
+            OUTPUT_NAME="$OUTPUT_NAME.exe"
+          fi
+          go build -trimpath -ldflags="-s -w" -o $OUTPUT_NAME ./...
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cell-clip-${{ steps.vars.outputs.GOOS }}-${{ steps.vars.outputs.GOARCH }}
+          path: cell-clip-${{ steps.vars.outputs.GOOS }}-${{ steps.vars.outputs.GOARCH }}*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed for creating a release
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: ./dist/**
