@@ -27,6 +27,7 @@ jobs:
 
       - name: Determine build variables
         id: vars
+        shell: bash
         run: |
           case "${{ matrix.os }}" in
             ubuntu-latest)   GOOS=linux  ;;
@@ -37,6 +38,7 @@ jobs:
           echo "GOARCH=${{ matrix.arch }}" >> $GITHUB_OUTPUT
 
       - name: Build binary
+        shell: bash
         env:
           GOOS: ${{ steps.vars.outputs.GOOS }}
           GOARCH: ${{ steps.vars.outputs.GOARCH }}
