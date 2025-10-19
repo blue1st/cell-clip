@@ -1,12 +1,15 @@
 package cmd
 
 import (
+    "bufio"
     "fmt"
     "log"
     "os"
     "os/user"
     "path/filepath"
     "regexp"
+    "sort"
+    "strconv"
     "strings"
 
     "github.com/atotto/clipboard"
@@ -16,11 +19,51 @@ import (
 )
 
 var getCmd = &cobra.Command{
-	Use:   "get [setting_name]",
-	Short: "Get a cell value from Google Sheets and copy it to the clipboard",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		settingName := args[0]
+    Use:   "get [setting_name]",
+    Short: "Get a cell value from Google Sheets and copy it to the clipboard",
+    Args:  cobra.MaximumNArgs(1),
+    Run: func(cmd *cobra.Command, args []string) {
+        var settingName string
+        // 設定名が指定されていない場合は対話的に選択
+        if len(args) == 0 {
+            usr, err := user.Current()
+            if err != nil {
+                log.Fatalf("Unable to get current user: %v", err)
+            }
+            configPath := filepath.Join(usr.HomeDir, ".cell-clip", "config.yml")
+            configData, err := os.ReadFile(configPath)
+            if err != nil {
+                log.Fatalf("Unable to read config file: %v", err)
+            }
+            var configs map[string]Config
+            err = yaml.Unmarshal(configData, &configs)
+            if err != nil {
+                log.Fatalf("Unable to parse config file: %v", err)
+            }
+
+            // 名前をソートして表示
+            var names []string
+            for name := range configs {
+                names = append(names, name)
+            }
+            sort.Strings(names)
+            fmt.Println("Select a setting:")
+            for i, n := range names {
+                fmt.Printf("%d) %s\n", i+1, n)
+            }
+            fmt.Print("Enter number or name: ")
+            reader := bufio.NewReader(os.Stdin)
+            input, _ := reader.ReadString('\n')
+            input = strings.TrimSpace(input)
+            // 数字が入力された場合はインデックスに変換
+            if idx, err := strconv.Atoi(input); err == nil && idx >= 1 && idx <= len(names) {
+                settingName = names[idx-1]
+            } else {
+                settingName = input
+            }
+        } else {
+            settingName = args[0]
+        }
 
 		usr, err := user.Current()
 		if err != nil {

@@ -1,14 +1,15 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"os/user"
-	"path/filepath"
+    "fmt"
+    "log"
+    "os"
+    "os/user"
+    "path/filepath"
+    "sort"
 
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+    "github.com/spf13/cobra"
+    "gopkg.in/yaml.v2"
 )
 
 var listCmd = &cobra.Command{
@@ -36,10 +37,17 @@ var listCmd = &cobra.Command{
 			log.Fatalf("Unable to parse config file: %v", err)
 		}
 
-		fmt.Println("Registered setting names:")
-		for name := range configs {
-			fmt.Println("- ", name)
-		}
+        // ソートされた名前のリストを表示
+        var names []string
+        for name := range configs {
+            names = append(names, name)
+        }
+        sort.Strings(names)
+
+        fmt.Println("Registered setting names:")
+        for _, name := range names {
+            fmt.Println("- ", name)
+        }
 	},
 }
 
