@@ -1,0 +1,22 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go toolchain
+*.out
+
+# Dependency directories (binaries and source code)
+vendor/
+
+# Go workspace file
+go.work
+
+# Editor directories and files
+.idea/
+.vscode/
+.DS_Store
