@@ -45,7 +45,10 @@ jobs:
           if [ "$GOOS" = "windows" ]; then
             OUTPUT_NAME="$OUTPUT_NAME.exe"
           fi
-          go build -trimpath -ldflags="-s -w" -o $OUTPUT_NAME ./...
+          # Build the main package only to produce a single binary.
+          # Using "./..." includes sub-packages (e.g., cmd) which results in
+          # "cannot write multiple packages to non-directory" errors.
+          go build -trimpath -ldflags="-s -w" -o $OUTPUT_NAME .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
